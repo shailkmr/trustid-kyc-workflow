@@ -1,0 +1,15 @@
+google-cloud-aiplatform
+google-cloud-bigquery
+google-cloud-storage
+fastapi
+uvicorn
+pydantic
+python-multipart
+python-dotenv
+aiofiles
+pandas
+numpy
+pillow
+PyPDF2
+python-magic
+adk-python

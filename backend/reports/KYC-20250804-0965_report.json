@@ -1,0 +1,25 @@
+{
+  "case_id": "KYC-20250804-0965",
+  "status": "completed",
+  "customer_data": "full_name='John Smith' date_of_birth='50615-12-08' nationality='American' citizenship='United States' address='123 Main Street, Apt 4B\\nSan Francisco, CA 94102\\nUnited States' phone='+1 (555) 123-4567' email='john.smith@example.com' occupation='Software Engineer' employer='Tech Corp Inc' net_worth=2500000.0 source_of_wealth='employment' is_pep=False additional_info={}",
+  "analysis_results": {
+    "agent_response": "Demo KYC analysis for John Smith",
+    "internal_database_check": "completed - no existing records found",
+    "document_analysis": "skipped",
+    "external_searches": "completed - no adverse findings",
+    "wealth_assessment": "completed - standard risk profile"
+  },
+  "risk_assessment": {
+    "risk_score": 25,
+    "risk_level": "LOW",
+    "risk_factors": [],
+    "recommendation": "Standard KYC procedures. Approve for onboarding."
+  },
+  "recommendations": [
+    "Standard KYC procedures. Approve for onboarding.",
+    "Verify all document authenticity",
+    "Conduct periodic reviews as per policy"
+  ],
+  "timestamp": "2025-08-04T00:06:31.043154",
+  "documents_processed": 0
+}
