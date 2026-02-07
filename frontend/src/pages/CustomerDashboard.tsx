@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,19 @@ const CustomerDashboard: React.FC = () => {
     const [status, setStatus] = useState<KYCStatus>('idle');
     const [progress, setProgress] = useState(0);
     const [activeStep, setActiveStep] = useState(0);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleUploadClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (files) {
+            setSelectedFiles(Array.from(files));
+        }
+    };
 
     const steps = [
         { name: 'Document Upload', icon: Upload, description: 'Securely submit your identity documents' },
@@ -104,10 +117,38 @@ const CustomerDashboard: React.FC = () => {
                                             <Label>Personal Address</Label>
                                             <Textarea placeholder="123 Financial District..." className="bg-white/50 border-gray-100 rounded-xl min-h-[100px]" />
                                         </div>
-                                        <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center hover:border-indigo-300 transition-colors bg-white/40 cursor-pointer">
-                                            <Upload className="h-10 w-10 mx-auto text-indigo-400 mb-4" />
-                                            <p className="text-sm font-medium text-gray-900">Upload Identity Document</p>
-                                            <p className="text-xs text-gray-500 mt-1">Accepts PDF, Passport scans, or ID Cards (Max 10MB)</p>
+                                        <div
+                                            onClick={handleUploadClick}
+                                            className="border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center hover:border-indigo-300 transition-colors bg-white/40 cursor-pointer group"
+                                        >
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                onChange={handleFileChange}
+                                                className="hidden"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                multiple
+                                            />
+                                            <Upload className="h-10 w-10 mx-auto text-indigo-400 mb-4 group-hover:scale-110 transition-transform" />
+                                            {selectedFiles.length > 0 ? (
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-medium text-gray-900">
+                                                        {selectedFiles.length} {selectedFiles.length === 1 ? 'file' : 'files'} selected
+                                                    </p>
+                                                    <div className="flex flex-wrap justify-center gap-1 max-w-xs mx-auto">
+                                                        {selectedFiles.map((file, i) => (
+                                                            <Badge key={i} variant="secondary" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-100">
+                                                                {file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p className="text-sm font-medium text-gray-900">Upload Identity Documents</p>
+                                                    <p className="text-xs text-gray-500 mt-1">Accepts PDF, Passport scans, or ID Cards (Max 10MB each)</p>
+                                                </>
+                                            )}
                                         </div>
                                         <Button onClick={handleStartKYC} className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-lg font-medium shadow-lg shadow-indigo-100">
                                             Initiate Verification Flow
