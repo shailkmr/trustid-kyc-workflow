@@ -1,17 +1,15 @@
-research_task:
+pdf_ocr_task:
   description: >
-    Conduct a thorough research about {topic}
-    Make sure you find any interesting and relevant information given
-    the current year is {current_year}.
+    Use the DocumentOcrTool to extract all relevant information from the PDF file at {file_path}. 
+    Focus on extracting structured data like names, dates, and ID numbers if present.
   expected_output: >
-    A list with 10 bullet points of the most relevant information about {topic}
-  agent: researcher
+    A structured JSON-like summary of the information found in the PDF.
+  agent: pdf_ocr_agent
 
-reporting_task:
+image_ocr_task:
   description: >
-    Review the context you got and expand each topic into a full section for a report.
-    Make sure the report is detailed and contains any and all relevant information.
+    Analyze the image at {file_path} using the DocumentOcrTool. 
+    Capture every detail and present it in a clear, structured format.
   expected_output: >
-    A fully fledged report with the main topics, each with a full section of information.
-    Formatted as markdown without '```'
-  agent: reporting_analyst
+    A detailed extraction of all text and data found in the image.
+  agent: image_ocr_agent

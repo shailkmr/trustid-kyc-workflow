@@ -7,6 +7,8 @@ from typing import List
 
 load_dotenv()
 
+from kycagents.tools.ocr_tool import DocumentOcrTool
+
 @CrewBase
 class Kycagents():
     """Kycagents crew"""
@@ -22,32 +24,33 @@ class Kycagents():
     )
 
     @agent
-    def researcher(self) -> Agent:
+    def pdf_ocr_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config['researcher'], # type: ignore[index]
+            config=self.agents_config['pdf_ocr_agent'], # type: ignore[index]
             verbose=True,
-            llm=self.llm
+            llm=self.llm,
+            tools=[DocumentOcrTool()]
         )
 
     @agent
-    def reporting_analyst(self) -> Agent:
+    def image_ocr_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config['reporting_analyst'], # type: ignore[index]
+            config=self.agents_config['image_ocr_agent'], # type: ignore[index]
             verbose=True,
-            llm=self.llm
+            llm=self.llm,
+            tools=[DocumentOcrTool()]
         )
 
     @task
-    def research_task(self) -> Task:
+    def pdf_ocr_task(self) -> Task:
         return Task(
-            config=self.tasks_config['research_task'], # type: ignore[index]
+            config=self.tasks_config['pdf_ocr_task'], # type: ignore[index]
         )
 
     @task
-    def reporting_task(self) -> Task:
+    def image_ocr_task(self) -> Task:
         return Task(
-            config=self.tasks_config['reporting_task'], # type: ignore[index]
-            output_file='report.md'
+            config=self.tasks_config['image_ocr_task'], # type: ignore[index]
         )
 
     @crew

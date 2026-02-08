@@ -17,8 +17,11 @@ def run():
     """
     Run the crew.
     """
+    # Use the first command-line argument as the file_path if provided
+    file_path = sys.argv[1] if len(sys.argv) > 1 else 'test_ocr_document.jpg'
+    
     inputs = {
-        'topic': 'AI LLMs',
+        'file_path': file_path,
         'current_year': str(datetime.now().year)
     }
 
