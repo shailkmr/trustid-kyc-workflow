@@ -278,12 +278,18 @@ async def run_agent_workflow(case_id: str):
         # Navigate to kycagents dir and run uv run run_crew
         kyc_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "kycagents"))
         
+        # Force UTF-8 encoding for Windows specifically to handle emojis in CrewAI output
+        env = os.environ.copy()
+        env["PYTHONUTF8"] = "1"
+        
         process = subprocess.Popen(
             ["uv", "run", "run_crew", file_path],
             cwd=kyc_dir,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            encoding='utf-8',
+            env=env
         )
         
         stdout, stderr = process.communicate()
