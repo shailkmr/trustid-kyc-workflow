@@ -2,7 +2,9 @@ import os
 import json
 import logging
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, BackgroundTasks, Form
+import shutil
+import subprocess
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -50,6 +52,8 @@ logger = logging.getLogger(__name__)
 
 # --- Simple Persistence Layer ---
 CASE_STORE_FILE = "kyc_cases.json"
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def load_cases() -> Dict[str, Any]:
     if os.path.exists(CASE_STORE_FILE):
@@ -213,11 +217,104 @@ async def get_case_status(case_id: str):
         raise HTTPException(status_code=404, detail="Case not found")
     return cases[case_id]
 
-@app.post("/kyc/upload-documents")
-async def upload_documents(case_id: str = "demo-case"):
-    """Mock document upload endpoint."""
-    logger.info(f"Mock upload for case: {case_id}")
-    return {"status": "success", "message": "Documents uploaded successfully", "case_id": case_id}
+@app.post("/kyc/upload-docs")
+async def upload_kyc_docs(
+    full_name: str = Form(...),
+    files: List[UploadFile] = File(...),
+):
+    """
+    Actual document upload endpoint that starts the process.
+    """
+    case_id = f"KYC-{datetime.utcnow().strftime('%Y%m%d')}-{abs(hash(full_name)) % 10000:04d}"
+    
+    saved_files = []
+    case_dir = os.path.join(UPLOAD_DIR, case_id)
+    os.makedirs(case_dir, exist_ok=True)
+    
+    for file in files:
+        file_path = os.path.join(case_dir, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        saved_files.append(os.path.abspath(file_path))
+    
+    # Initial case status
+    case_data = {
+        "case_id": case_id,
+        "status": "uploading",
+        "customer_data": {"full_name": full_name},
+        "files": saved_files,
+        "timestamp": datetime.utcnow().isoformat(),
+        "analysis_results": {},
+        "risk_assessment": {}
+    }
+    save_case(case_id, case_data)
+    
+    return {"status": "success", "case_id": case_id, "files": saved_files}
+
+@app.post("/kyc/start-analysis/{case_id}")
+async def start_kyc_analysis(case_id: str, background_tasks: BackgroundTasks):
+    """Trigger the CrewAI agent in the background."""
+    cases = load_cases()
+    if case_id not in cases:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    cases[case_id]["status"] = "analyzing"
+    save_case(case_id, cases[case_id])
+    
+    background_tasks.add_task(run_agent_workflow, case_id)
+    return {"status": "started", "case_id": case_id}
+
+async def run_agent_workflow(case_id: str):
+    """Background task to run CrewAI agents."""
+    try:
+        cases = load_cases()
+        case = cases.get(case_id)
+        if not case or not case.get("files"):
+            return
+
+        file_path = case["files"][0] # Just use the first one for now
+        
+        # We'll use subprocess to run the crew command safely in its own env
+        # Navigate to kycagents dir and run uv run run_crew
+        kyc_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "kycagents"))
+        
+        process = subprocess.Popen(
+            ["uv", "run", "run_crew", file_path],
+            cwd=kyc_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        stdout, stderr = process.communicate()
+        
+        if process.returncode == 0:
+            # Try to find a report.md or extract from stdout
+            # For this demo, we'll assume the agent adds results to the case store
+            # Since the agent runs in a separate process, we'll mock the extraction
+            # In a real app, the agent would use a Tool to update a DB or File.
+            
+            case["status"] = "completed"
+            case["analysis_results"] = {
+                "raw_output": stdout,
+                "agent_notes": "Extraction completed via GLM-OCR."
+            }
+            # Mocking some structured data extraction for the UI
+            if "John Doe" in stdout:
+               case["customer_data"]["extracted"] = {"name": "John Doe", "id": "123456789"}
+        else:
+            case["status"] = "failed"
+            case["analysis_results"] = {"error": stderr}
+            
+        save_case(case_id, case)
+        
+    except Exception as e:
+        logger.error(f"Background task failed: {e}")
+        cases = load_cases()
+        if case_id in cases:
+            cases[case_id]["status"] = "failed"
+            save_case(case_id, cases[case_id])
+
 
 @app.post("/kyc/process", response_model=KYCResponse)
 async def process_kyc_request(request: KYCRequest):

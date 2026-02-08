@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,10 @@ const CustomerDashboard: React.FC = () => {
         fileInputRef.current?.click();
     };
 
+    const [fullName, setFullName] = useState("");
+    const [caseId, setCaseId] = useState<string | null>(null);
+    const [extractedData, setExtractedData] = useState<any>(null);
+
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (files) {
@@ -39,26 +43,81 @@ const CustomerDashboard: React.FC = () => {
     ];
 
     const handleStartKYC = async () => {
+        if (!fullName || selectedFiles.length === 0) {
+            alert("Please provide your full name and select at least one document.");
+            return;
+        }
+
         setStatus('uploading');
         setActiveStep(0);
         setProgress(10);
 
-        // Simulate Workflow
-        await new Promise(r => setTimeout(r, 2000));
-        setStatus('analyzing');
-        setActiveStep(1);
-        setProgress(40);
+        try {
+            // 1. Upload Documents
+            const formData = new FormData();
+            formData.append('full_name', fullName);
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
 
-        await new Promise(r => setTimeout(r, 3000));
-        setStatus('verifying');
-        setActiveStep(2);
-        setProgress(75);
+            const uploadRes = await fetch('http://localhost:8000/kyc/upload-docs', {
+                method: 'POST',
+                body: formData
+            });
 
-        await new Promise(r => setTimeout(r, 4000));
-        setStatus('completed');
-        setActiveStep(3);
-        setProgress(100);
+            if (!uploadRes.ok) throw new Error('Upload failed');
+            const { case_id } = await uploadRes.json();
+            setCaseId(case_id);
+            setProgress(30);
+
+            // 2. Start Analysis
+            const startRes = await fetch(`http://localhost:8000/kyc/start-analysis/${case_id}`, {
+                method: 'POST'
+            });
+
+            if (!startRes.ok) throw new Error('Analysis start failed');
+            setStatus('analyzing');
+            setActiveStep(1);
+            setProgress(50);
+
+        } catch (error) {
+            console.error(error);
+            setStatus('failed');
+        }
     };
+
+    // Polling for status
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+
+        if (caseId && (status === 'analyzing' || status === 'verifying')) {
+            interval = setInterval(async () => {
+                try {
+                    const res = await fetch(`http://localhost:8000/kyc/status/${caseId}`);
+                    if (res.ok) {
+                        const data = await res.json();
+
+                        // Map backend status to frontend steps
+                        if (data.status === 'completed') {
+                            setStatus('completed');
+                            setActiveStep(3);
+                            setProgress(100);
+                            setExtractedData(data.customer_data?.extracted || null);
+                            clearInterval(interval);
+                        } else if (data.status === 'failed') {
+                            setStatus('failed');
+                            clearInterval(interval);
+                        }
+                        // Intermediate progress can be simulated or driven by backend logic
+                    }
+                } catch (error) {
+                    console.error("Polling error:", error);
+                }
+            }, 3000);
+        }
+
+        return () => clearInterval(interval);
+    }, [caseId, status]);
 
     return (
         <div className="min-h-screen bg-[#FDFCFB]">
@@ -106,7 +165,12 @@ const CustomerDashboard: React.FC = () => {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label>Full Legal Name</Label>
-                                                <Input placeholder="John Doe" className="bg-white/50 border-gray-100 rounded-xl" />
+                                                <Input
+                                                    value={fullName}
+                                                    onChange={(e) => setFullName(e.target.value)}
+                                                    placeholder="John Doe"
+                                                    className="bg-white/50 border-gray-100 rounded-xl"
+                                                />
                                             </div>
                                             <div className="space-y-2">
                                                 <Label>Date of Birth</Label>
@@ -222,15 +286,38 @@ const CustomerDashboard: React.FC = () => {
                                             <motion.div
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className="mt-12 p-6 bg-green-50 rounded-3xl border border-green-100 flex items-center gap-4"
+                                                className="mt-12 space-y-6"
                                             >
-                                                <div className="h-12 w-12 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-100">
-                                                    <Shield className="h-6 w-6" />
+                                                <div className="p-6 bg-green-50 rounded-3xl border border-green-100 flex items-center gap-4">
+                                                    <div className="h-12 w-12 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-100">
+                                                        <Shield className="h-6 w-6" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-green-900">Verification Complete</h4>
+                                                        <p className="text-sm text-green-700">Your KYC report has been generated and sent for final approval.</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-bold text-green-900">Verification Complete</h4>
-                                                    <p className="text-sm text-green-700">Your KYC report has been generated and sent for final approval.</p>
-                                                </div>
+
+                                                {extractedData && (
+                                                    <Card className="border-none shadow-lg rounded-2xl bg-white overflow-hidden">
+                                                        <CardHeader className="bg-gray-50 border-b pb-4">
+                                                            <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                                Extracted Information
+                                                            </CardTitle>
+                                                        </CardHeader>
+                                                        <CardContent className="p-6 grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Full Name</p>
+                                                                <p className="font-medium text-gray-900">{extractedData.name}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">ID Number</p>
+                                                                <p className="font-medium text-gray-900">{extractedData.id}</p>
+                                                            </div>
+                                                        </CardContent>
+                                                    </Card>
+                                                )}
                                             </motion.div>
                                         )}
                                     </AnimatePresence>

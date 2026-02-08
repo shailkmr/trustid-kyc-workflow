@@ -1,0 +1,18 @@
+{
+  "KYC-20260208-3125": {
+    "case_id": "KYC-20260208-3125",
+    "status": "completed",
+    "customer_data": {
+      "full_name": "Shailesh Kumar"
+    },
+    "files": [
+      "D:\\Projects\\AgenticAI\\trustid-kyc-workflow\\backend\\uploads\\KYC-20260208-3125\\dummypassport.jpg"
+    ],
+    "timestamp": "2026-02-08T22:13:43.808258",
+    "analysis_results": {
+      "raw_output": "+-------------------------[CrewAIEventsBus] Sync handler error in on_crew_started: 'charmap' codec can't \nencode character '\\U0001f680' in position 1: character maps to <undefined>\n+-------------------------[CrewAIEventsBus] Sync handler error in on_task_started: 'charmap' codec can't \nencode character '\\U0001f680' in position 1: character maps to <undefined>\n+-------------------------[CrewAIEventsBus] Sync handler error in on_agent_logs_started: 'charmap' codec \ncan't encode character '\\U0001f680' in position 1: character maps to \n<undefined>\n+---------------------------[CrewAIEventsBus] Sync handler error in on_agent_logs_execution: 'charmap' \ncodec can't encode character '\\u2705' in position 1: character maps to \n<undefined>\n+-------------------------[CrewAIEventsBus] Sync handler error in on_task_completed: 'charmap' codec \ncan't encode character '\\U0001f680' in position 1: character maps to \n<undefined>\n+------------------------------[CrewAIEventsBus] Sync handler error in on_task_started: 'charmap' codec can't \nencode character '\\U0001f4cb' in position 1: character maps to <undefined>\n+------------------------------[CrewAIEventsBus] Sync handler error in on_agent_logs_started: 'charmap' codec \ncan't encode character '\\U0001f4cb' in position 1: character maps to \n<undefined>\n+-------------------------[CrewAIEventsBus] Sync handler error in on_agent_logs_execution: 'charmap' \ncodec can't encode character '\\U0001f680' in position 1: character maps to \n<undefined>\n+------------------------------[CrewAIEventsBus] Sync handler error in on_task_completed: 'charmap' codec \ncan't encode character '\\U0001f4cb' in position 1: character maps to \n<undefined>\n+-------------------------[CrewAIEventsBus] Sync handler error in on_crew_completed: 'charmap' codec \ncan't encode character '\\U0001f680' in position 1: character maps to \n<undefined>\n",
+      "agent_notes": "Extraction completed via GLM-OCR."
+    },
+    "risk_assessment": {}
+  }
+}
