@@ -52,3 +52,6 @@ For support, questions, or feedback regarding the Kycagents Crew or crewAI.
 - [Chat with our docs](https://chatg.pt/DWjSBZn)
 
 Let's create wonders together with the power and simplicity of crewAI.
+
+## To run with file path
+uv run run_crew "C:\Users\shail\Downloads\dummy-passport.jpg"
